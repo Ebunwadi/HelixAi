@@ -1,2 +1,1 @@
-def main() -> None:
-    print("Hello from helix-api!")
+"""HelixAI API package."""
