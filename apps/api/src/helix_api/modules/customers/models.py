@@ -2,7 +2,8 @@ from enum import StrEnum
 from typing import Any
 from uuid import UUID, uuid4
 
-from sqlalchemy import Enum, ForeignKey, JSON, String, Uuid
+from sqlalchemy import Enum, ForeignKey, String, Uuid
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from helix_api.db.base import Base
@@ -34,5 +35,5 @@ class Customer(Base):
         nullable=False,
     )
     metadata_json: Mapped[dict[str, Any]] = mapped_column(
-        "metadata", JSON, default=dict, nullable=False
+        "metadata", JSONB, default=dict, nullable=False
     )

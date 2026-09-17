@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import type { FormEvent } from "react";
+import { useEffect, useState } from "react";
 
 import { apiFetch, type Conversation } from "@/lib/api";
 
@@ -9,17 +10,28 @@ export default function ConversationsPage() {
   const [title, setTitle] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  const loadConversations = useCallback(async () => {
-    try {
-      setConversations(await apiFetch<Conversation[]>("/api/v1/conversations"));
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Could not load conversations");
-    }
+  useEffect(() => {
+    let cancelled = false;
+    apiFetch<Conversation[]>("/api/v1/conversations")
+      .then((items) => {
+        if (!cancelled) {
+          setConversations(items);
+        }
+      })
+      .catch((reason: unknown) => {
+        if (!cancelled) {
+          setError(reason instanceof Error ? reason.message : "Could not load conversations");
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  useEffect(() => {
-    void loadConversations();
-  }, [loadConversations]);
+  async function reloadConversations() {
+    setConversations(await apiFetch<Conversation[]>("/api/v1/conversations"));
+  }
 
   async function createConversation(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -30,7 +42,7 @@ export default function ConversationsPage() {
         body: JSON.stringify({ title: title || "New conversation" }),
       });
       setTitle("");
-      await loadConversations();
+      await reloadConversations();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Could not create conversation");
     }

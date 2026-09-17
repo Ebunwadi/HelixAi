@@ -1,13 +1,13 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 
-from helix_api.modules.auth.dependencies import get_current_context
-from helix_api.modules.auth.schemas import CurrentContext, CurrentContextResponse
+from helix_api.modules.auth.dependencies import CurrentContextDependency
+from helix_api.modules.auth.schemas import CurrentContextResponse
 
 router = APIRouter(tags=["auth"])
 
 
 @router.get("/me", response_model=CurrentContextResponse)
-async def get_me(context: CurrentContext = Depends(get_current_context)) -> CurrentContextResponse:
+async def get_me(context: CurrentContextDependency) -> CurrentContextResponse:
     return CurrentContextResponse(
         user_id=context.user_id,
         tenant_id=context.tenant_id,

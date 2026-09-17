@@ -2,8 +2,9 @@
 
 from collections.abc import Sequence
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
+from sqlalchemy.dialects import postgresql
 
 revision: str = "0001_saas_foundation"
 down_revision: str | None = None
@@ -79,7 +80,7 @@ def upgrade() -> None:
         sa.Column("subscription_plan", sa.String(length=120), nullable=True),
         sa.Column("region", sa.String(length=120), nullable=True),
         sa.Column("status", customer_status, nullable=False),
-        sa.Column("metadata", sa.JSON(), nullable=False),
+        sa.Column("metadata", postgresql.JSONB(astext_type=sa.Text()), nullable=False),
         sa.ForeignKeyConstraint(["tenant_id"], ["tenants.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )

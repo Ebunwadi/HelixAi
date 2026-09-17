@@ -7,9 +7,9 @@ from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
+import helix_api.db.models  # noqa: F401
 from helix_api.core.config import get_settings
 from helix_api.db.base import Base
-import helix_api.db.models  # noqa: F401
 
 config = context.config
 config.set_main_option("sqlalchemy.url", get_settings().database_url)

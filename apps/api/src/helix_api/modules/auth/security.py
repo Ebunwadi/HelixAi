@@ -1,4 +1,5 @@
 from functools import lru_cache
+from typing import Annotated
 
 import jwt
 from fastapi import Header
@@ -7,6 +8,11 @@ from jwt import PyJWKClient
 from helix_api.core.config import Settings, get_settings
 from helix_api.core.errors import AuthenticationError
 from helix_api.modules.auth.schemas import AuthenticatedIdentity
+
+AuthorizationHeader = Annotated[str | None, Header(alias="Authorization")]
+DevSubjectHeader = Annotated[str | None, Header(alias="X-Helix-Subject")]
+DevEmailHeader = Annotated[str | None, Header(alias="X-Helix-Email")]
+DevNameHeader = Annotated[str | None, Header(alias="X-Helix-Name")]
 
 
 class JwtVerifier:
@@ -44,10 +50,10 @@ def get_jwt_verifier() -> JwtVerifier:
 
 
 def authenticate_request(
-    authorization: str | None = Header(default=None, alias="Authorization"),
-    dev_subject: str | None = Header(default=None, alias="X-Helix-Subject"),
-    dev_email: str | None = Header(default=None, alias="X-Helix-Email"),
-    dev_name: str | None = Header(default=None, alias="X-Helix-Name"),
+    authorization: AuthorizationHeader = None,
+    dev_subject: DevSubjectHeader = None,
+    dev_email: DevEmailHeader = None,
+    dev_name: DevNameHeader = None,
 ) -> AuthenticatedIdentity:
     settings = get_settings()
 
