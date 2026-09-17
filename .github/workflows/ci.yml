@@ -10,6 +10,24 @@ jobs:
   api:
     name: API checks
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: helix
+          POSTGRES_PASSWORD: helix
+          POSTGRES_DB: helix
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U helix -d helix"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql+asyncpg://helix:helix@localhost:5432/helix
+      HELIX_AUTH_MODE: dev
+      HELIX_RUN_DB_TESTS: "1"
     defaults:
       run:
         working-directory: apps/api
@@ -19,6 +37,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Resolve dependency lock
+        run: uv lock
+      - name: Upload resolved lock for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: sprint2-uv-lock
+          path: apps/api/uv.lock
       - name: Install dependencies
         run: uv sync --group dev
       - name: Lint
@@ -27,6 +52,8 @@ jobs:
         run: uv run ruff format --check .
       - name: Typecheck
         run: uv run pyright
+      - name: Migrate database
+        run: uv run alembic upgrade head
       - name: Test
         run: uv run pytest
 
