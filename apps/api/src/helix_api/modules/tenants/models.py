@@ -50,9 +50,7 @@ class Tenant(Base):
 
 class Membership(Base):
     __tablename__ = "memberships"
-    __table_args__ = (
-        UniqueConstraint("tenant_id", "user_id", name="uq_membership_tenant_user"),
-    )
+    __table_args__ = (UniqueConstraint("tenant_id", "user_id", name="uq_membership_tenant_user"),)
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
     tenant_id: Mapped[UUID] = mapped_column(

@@ -49,9 +49,7 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("external_identity_id"),
     )
-    op.create_index(
-        "ix_users_external_identity_id", "users", ["external_identity_id"], unique=True
-    )
+    op.create_index("ix_users_external_identity_id", "users", ["external_identity_id"], unique=True)
 
     op.create_table(
         "memberships",

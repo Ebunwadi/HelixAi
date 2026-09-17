@@ -59,9 +59,7 @@ def authenticate_request(
 
     if settings.helix_auth_mode == "dev":
         if not dev_subject:
-            raise AuthenticationError(
-                "Development auth requires the X-Helix-Subject header"
-            )
+            raise AuthenticationError("Development auth requires the X-Helix-Subject header")
         return AuthenticatedIdentity(
             subject=dev_subject,
             email=dev_email,

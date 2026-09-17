@@ -37,9 +37,7 @@ async def bootstrap() -> None:
             )
             session.add(tenant)
 
-        result = await session.execute(
-            select(User).where(User.external_identity_id == DEV_SUBJECT)
-        )
+        result = await session.execute(select(User).where(User.external_identity_id == DEV_SUBJECT))
         user = result.scalar_one_or_none()
         if user is None:
             user = User(

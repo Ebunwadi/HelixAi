@@ -14,9 +14,7 @@ class CustomerRepository:
 
     async def list_for_tenant(self, tenant_id: UUID) -> list[Customer]:
         result = await self.session.execute(
-            select(Customer)
-            .where(Customer.tenant_id == tenant_id)
-            .order_by(Customer.name.asc())
+            select(Customer).where(Customer.tenant_id == tenant_id).order_by(Customer.name.asc())
         )
         return list(result.scalars().all())
 
