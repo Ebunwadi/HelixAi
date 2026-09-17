@@ -29,32 +29,36 @@ Sprint 1 does **not** require Azure or OpenAI access.
 ```bash
 git clone https://github.com/Ebunwadi/HelixAi.git
 cd HelixAi
-cp .env.example .env
+cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.example apps/web/.env.local
 ```
 
-On Windows PowerShell, copy the env file with:
+On Windows PowerShell:
 
 ```powershell
-Copy-Item .env.example .env
+Copy-Item apps/api/.env.example apps/api/.env
+Copy-Item apps/web/.env.example apps/web/.env.local
 ```
 
-`.env` is gitignored. Put local values there; never commit secrets.
+The local environment files are gitignored. Put real local values there; never commit secrets.
 
 ### API
 
 ```bash
 cd apps/api
 uv sync --group dev
-uv run helix-api
+uv run uvicorn helix_api.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 The API listens on http://localhost:8000. Check http://localhost:8000/health.
+
+`uv run helix-api` is also available as a non-reloading startup command. Auto reload is deliberately kept in the development command rather than hard-coded into application startup.
 
 ### Web
 
 ```bash
 cd apps/web
-npm install
+npm ci
 npm run dev
 ```
 
@@ -66,7 +70,7 @@ Open http://localhost:3000.
 docker compose up -d
 ```
 
-Default connection string (also in `.env.example`):
+Default local connection string (also in `apps/api/.env.example`):
 
 ```text
 postgresql+asyncpg://helix:helix@localhost:5432/helix
@@ -93,11 +97,14 @@ From `apps/web`:
 npm run lint
 npm run typecheck
 npm test
+npm run build
 ```
 
-Auto-fix frontend lint with `npm run format`.
+Auto-fix supported frontend lint issues with `npm run lint:fix`.
 
-Or run everything from the repo root:
+The Sprint 1 frontend test is intentionally only a repository smoke test. Real component and end-to-end tests are added as application behaviour is introduced in later sprints.
+
+Or run all documented checks from the repo root:
 
 ```bash
 bash scripts/check.sh
@@ -109,10 +116,11 @@ powershell -File scripts/check.ps1
 
 ## Configuration conventions
 
-- Keys belong in `.env.example` with empty or non-secret local defaults.
-- Real values belong only in `.env` or a secret store.
-- Application code must not commit API keys, connection strings with passwords, or model credentials.
-- Azure / Foundry variables are listed in `.env.example` for later sprints; they can stay empty now.
+- API configuration is documented in `apps/api/.env.example`; local values belong in `apps/api/.env`.
+- Browser/web configuration is documented in `apps/web/.env.example`; local values belong in `apps/web/.env.local`.
+- Real production credentials and model/API secrets belong in a secret store, never in Git.
+- Non-secret local development defaults, such as the Docker Compose PostgreSQL username/password, may be documented in example files.
+- Azure / Foundry variables are listed for later sprints and can stay empty now.
 
 ## Contribution workflow
 

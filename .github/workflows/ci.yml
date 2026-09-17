@@ -5,7 +5,6 @@ on:
   push:
     branches:
       - main
-      - "chore/**"
 
 jobs:
   api:
@@ -52,3 +51,5 @@ jobs:
         run: npm run typecheck
       - name: Test
         run: npm test
+      - name: Build
+        run: npm run build
