@@ -32,7 +32,9 @@ cp apps/web/.env.example apps/web/.env.local
 docker compose up -d
 ```
 
-On Windows PowerShell use `Copy-Item` instead of `cp` if needed.
+Git Bash does not have `Copy-Item` (that is PowerShell) and may not have `uv` on `PATH`. Use `cp` and `python -m uv ...` instead.
+
+On Windows PowerShell you can use `Copy-Item` instead of `cp` if needed.
 
 ### Prepare the API and database
 
