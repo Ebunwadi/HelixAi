@@ -27,6 +27,43 @@ export type Conversation = {
   created_at: string;
 };
 
+export type Message = {
+  id: string;
+  conversation_id: string;
+  role: "user" | "assistant";
+  content: string;
+  model_name: string | null;
+  provider_response_id: string | null;
+  input_tokens: number | null;
+  output_tokens: number | null;
+  latency_ms: number | null;
+  created_at: string;
+};
+
+export type InvestigationIntent = {
+  customer_name: string | null;
+  issue_type: string;
+  time_reference: string | null;
+  requested_actions: string[];
+  summary: string;
+};
+
+export type InvestigationInterpretResponse = {
+  intent: InvestigationIntent;
+  model: {
+    model: string;
+    response_id: string | null;
+    input_tokens: number | null;
+    output_tokens: number | null;
+    latency_ms: number;
+  };
+};
+
+export type ServerSentEvent = {
+  event: string;
+  data: unknown;
+};
+
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
 function authHeaders(): HeadersInit {
@@ -52,6 +89,14 @@ function authHeaders(): HeadersInit {
   };
 }
 
+async function errorFromResponse(response: Response): Promise<Error> {
+  const body = (await response.json().catch(() => null)) as
+    | { message?: string; correlation_id?: string }
+    | null;
+  const suffix = body?.correlation_id ? ` (${body.correlation_id})` : "";
+  return new Error(`${body?.message ?? `Request failed with ${response.status}`}${suffix}`);
+}
+
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${apiBaseUrl}${path}`, {
     ...init,
@@ -63,12 +108,74 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
   });
 
   if (!response.ok) {
-    const body = (await response.json().catch(() => null)) as
-      | { message?: string; correlation_id?: string }
-      | null;
-    const suffix = body?.correlation_id ? ` (${body.correlation_id})` : "";
-    throw new Error(`${body?.message ?? `Request failed with ${response.status}`}${suffix}`);
+    throw await errorFromResponse(response);
   }
 
   return (await response.json()) as T;
+}
+
+export async function apiStream(path: string, init?: RequestInit): Promise<Response> {
+  const response = await fetch(`${apiBaseUrl}${path}`, {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "text/event-stream",
+      ...authHeaders(),
+      ...init?.headers,
+    },
+  });
+
+  if (!response.ok) {
+    throw await errorFromResponse(response);
+  }
+
+  return response;
+}
+
+export async function* readServerSentEvents(
+  response: Response,
+): AsyncGenerator<ServerSentEvent> {
+  if (!response.body) {
+    throw new Error("Streaming response did not include a body.");
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  while (true) {
+    const { value, done } = await reader.read();
+    buffer += decoder.decode(value ?? new Uint8Array(), { stream: !done }).replaceAll(
+      "\r\n",
+      "\n",
+    );
+
+    let boundary = buffer.indexOf("\n\n");
+    while (boundary >= 0) {
+      const block = buffer.slice(0, boundary);
+      buffer = buffer.slice(boundary + 2);
+      boundary = buffer.indexOf("\n\n");
+
+      let event = "message";
+      const dataLines: string[] = [];
+      for (const line of block.split("\n")) {
+        if (line.startsWith("event:")) {
+          event = line.slice("event:".length).trim();
+        } else if (line.startsWith("data:")) {
+          dataLines.push(line.slice("data:".length).trim());
+        }
+      }
+
+      if (dataLines.length > 0) {
+        yield {
+          event,
+          data: JSON.parse(dataLines.join("\n")) as unknown,
+        };
+      }
+    }
+
+    if (done) {
+      break;
+    }
+  }
 }

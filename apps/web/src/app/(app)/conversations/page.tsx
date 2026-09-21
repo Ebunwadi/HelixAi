@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
 
@@ -53,7 +54,8 @@ export default function ConversationsPage() {
       <p className="eyebrow">Conversation containers</p>
       <h2 className="page-title">Conversations</h2>
       <p className="page-lead">
-        Sprint 2 stores conversation ownership. Messages and model calls arrive in Sprint 3.
+        Conversations now own persisted user and assistant messages. Model calls themselves stay
+        behind the Sprint 3 gateway.
       </p>
       <form className="inline-form" onSubmit={createConversation}>
         <input
@@ -72,7 +74,10 @@ export default function ConversationsPage() {
               <strong>{conversation.title}</strong>
               <p>{new Date(conversation.created_at).toLocaleString()}</p>
             </div>
-            <span>{conversation.status}</span>
+            <div className="data-meta">
+              <span>{conversation.status}</span>
+              <Link href="/workspace">Open in Workspace →</Link>
+            </div>
           </article>
         ))}
       </div>
