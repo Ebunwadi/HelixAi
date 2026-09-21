@@ -57,12 +57,14 @@ async def list_messages(
     context: CurrentContextDependency,
     session: SessionDependency,
 ) -> list[MessageRead]:
-    service = ConversationChatService(
-        conversations=ConversationRepository(session),
-        messages=MessageRepository(session),
-        gateway=get_model_gateway(),
+    await ConversationService(ConversationRepository(session)).get_owned(
+        context=context,
+        conversation_id=conversation_id,
     )
-    messages = await service.history(context=context, conversation_id=conversation_id)
+    messages = await MessageRepository(session).list_for_conversation(
+        tenant_id=context.tenant_id,
+        conversation_id=conversation_id,
+    )
     return [MessageRead.model_validate(item) for item in messages]
 
 
@@ -112,7 +114,6 @@ async def stream_message(
         content=body.content,
     )
 
-    # Persist the user message before the long-lived streaming response starts.
     await session.commit()
 
     async def events() -> AsyncIterator[str]:
