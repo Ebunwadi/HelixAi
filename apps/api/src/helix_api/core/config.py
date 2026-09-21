@@ -20,6 +20,12 @@ class Settings(BaseSettings):
     helix_auth_audience: str | None = None
     helix_auth_jwks_url: str | None = None
 
+    helix_model_provider: Literal["mock", "azure_openai"] = "mock"
+    helix_model_max_output_tokens: int = 800
+    azure_openai_endpoint: str | None = None
+    azure_openai_api_key: str | None = None
+    azure_openai_deployment: str | None = None
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [item.strip() for item in self.cors_origins.split(",") if item.strip()]

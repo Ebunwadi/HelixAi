@@ -1,6 +1,6 @@
 [project]
 name = "helix-api"
-version = "0.2.0"
+version = "0.3.0"
 description = "HelixAI FastAPI application"
 authors = [
     { name = "Ebunwadi", email = "111129501+Ebunwadi@users.noreply.github.com" }
@@ -10,6 +10,7 @@ dependencies = [
     "alembic>=1.18,<2",
     "asyncpg>=0.30",
     "fastapi>=0.115",
+    "openai>=2.21,<3",
     "pydantic-settings>=2.10",
     "pyjwt[crypto]>=2.10",
     "sqlalchemy[asyncio]>=2.0,<2.1",
