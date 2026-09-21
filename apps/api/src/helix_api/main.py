@@ -1,15 +1,6 @@
-from fastapi import FastAPI
+from helix_api.app import create_app
 
-app = FastAPI(
-    title="HelixAI API",
-    version="0.1.0",
-    description="HelixAI customer operations API.",
-)
-
-
-@app.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ok"}
+app = create_app()
 
 
 def main() -> None:

@@ -7,54 +7,48 @@ This repository is a monorepo. The system design report is the product and archi
 ## Repository layout
 
 ```text
-apps/api      Python API (uv + FastAPI)
+apps/api      Python FastAPI application
 apps/web      Next.js + TypeScript frontend
-packages/     Shared libraries (empty in Sprint 1)
+packages/     Shared AI/application libraries (introduced in later sprints)
 infrastructure/
 docs/adr      Architecture Decision Records
-scripts/
+scripts/      Repository-level checks
 ```
-
-Sprint 1 does **not** require Azure or OpenAI access.
 
 ## Prerequisites
 
 - Python 3.12
-- [uv](https://docs.astral.sh/uv/) (`pip install uv` or the official installer)
+- [uv](https://docs.astral.sh/uv/)
 - Node.js 24 and npm
-- Docker Desktop (for PostgreSQL)
+- Docker Desktop
 
-## First-time setup
+## Local setup
 
 ```bash
 git clone https://github.com/Ebunwadi/HelixAi.git
 cd HelixAi
 cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env.local
+docker compose up -d
 ```
 
-On Windows PowerShell:
+Git Bash does not have `Copy-Item` (that is PowerShell) and may not have `uv` on `PATH`. Use `cp` and `python -m uv ...` instead.
 
-```powershell
-Copy-Item apps/api/.env.example apps/api/.env
-Copy-Item apps/web/.env.example apps/web/.env.local
-```
+On Windows PowerShell you can use `Copy-Item` instead of `cp` if needed.
 
-The local environment files are gitignored. Put real local values there; never commit secrets.
-
-### API
+### Prepare the API and database
 
 ```bash
 cd apps/api
 uv sync --group dev
+uv run alembic upgrade head
+uv run helix-bootstrap-dev
 uv run uvicorn helix_api.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-The API listens on http://localhost:8000. Check http://localhost:8000/health.
+The bootstrap command is local-only and creates a deterministic development user/tenant plus sample Acme and Globex customers. It prints the same subject and tenant identifiers used by `apps/web/.env.example`.
 
-`uv run helix-api` is also available as a non-reloading startup command. Auto reload is deliberately kept in the development command rather than hard-coded into application startup.
-
-### Web
+### Run the web app
 
 ```bash
 cd apps/web
@@ -62,21 +56,32 @@ npm ci
 npm run dev
 ```
 
-Open http://localhost:3000.
+Open http://localhost:3000. The protected shell first calls `GET /api/v1/me`; application navigation is rendered only after the API establishes a valid tenant context.
 
-### PostgreSQL
+## Sprint 2 authentication model
 
-```bash
-docker compose up -d
-```
+Authentication and application tenancy are intentionally separate:
 
-Default local connection string (also in `apps/api/.env.example`):
+1. An external identity proves who the caller is. In production mode the API validates a Bearer JWT using issuer, audience and JWKS settings.
+2. `User.external_identity_id` maps that identity to an internal HelixAI user.
+3. A tenant selection is authorised through an active `Membership` row.
+4. Services receive the trusted current context, and repositories still filter tenant-owned data by `tenant_id`.
+
+For local development, `HELIX_AUTH_MODE=dev` accepts explicit `X-Helix-*` headers. Do not use that mode as production authentication.
+
+## Sprint 2 API routes
 
 ```text
-postgresql+asyncpg://helix:helix@localhost:5432/helix
+GET  /health
+GET  /api/v1/me
+GET  /api/v1/tenants/current
+GET  /api/v1/customers
+GET  /api/v1/customers/{id}
+POST /api/v1/conversations
+GET  /api/v1/conversations
 ```
 
-The API does not use the database yet. Compose is in place so Sprint 2 can add migrations without rediscovering local infrastructure.
+Messages and model calls deliberately start in Sprint 3.
 
 ## Checks
 
@@ -89,7 +94,7 @@ uv run pyright
 uv run pytest
 ```
 
-Format Python with `uv run ruff format .`.
+Database integration tests run in CI with PostgreSQL after `alembic upgrade head`.
 
 From `apps/web`:
 
@@ -100,44 +105,22 @@ npm test
 npm run build
 ```
 
-Auto-fix supported frontend lint issues with `npm run lint:fix`.
-
-The Sprint 1 frontend test is intentionally only a repository smoke test. Real component and end-to-end tests are added as application behaviour is introduced in later sprints.
-
-Or run all documented checks from the repo root:
-
-```bash
-bash scripts/check.sh
-```
-
-```powershell
-powershell -File scripts/check.ps1
-```
+Or run the local repository checks with `scripts/check.sh` / `scripts/check.ps1`. The GitHub Actions API job additionally validates the real migration and cross-tenant integration test.
 
 ## Configuration conventions
 
-- API configuration is documented in `apps/api/.env.example`; local values belong in `apps/api/.env`.
-- Browser/web configuration is documented in `apps/web/.env.example`; local values belong in `apps/web/.env.local`.
-- Real production credentials and model/API secrets belong in a secret store, never in Git.
-- Non-secret local development defaults, such as the Docker Compose PostgreSQL username/password, may be documented in example files.
-- Azure / Foundry variables are listed for later sprints and can stay empty now.
+- API configuration: `apps/api/.env.example` → local `apps/api/.env`.
+- Browser configuration: `apps/web/.env.example` → local `apps/web/.env.local`.
+- Production credentials and model/API secrets belong in a secret store, never in Git.
+- Development Docker credentials in example configuration are non-secret local defaults.
 
 ## Contribution workflow
 
-1. Create a branch from the current sprint branch (do not push directly to `main`).
-2. Use conventional commits:
-   - `feat:` new behaviour
-   - `fix:` a bug
-   - `test:` tests only
-   - `docs:` documentation
-   - `chore:` tooling, repo or CI
-3. Keep changes reviewable and tied to a GitHub issue (`HAI-xxx`).
-4. Run the checks above before opening a pull request.
-5. If the change alters architecture, update `docs/adr` in the same PR.
-6. GitHub Actions must pass on the PR.
+1. Work on a sprint/feature branch; do not push features directly to `main`.
+2. Use conventional commits (`feat:`, `fix:`, `test:`, `docs:`, `chore:`).
+3. Keep changes tied to a GitHub issue where practical.
+4. Run lint, type checks, tests and builds before review.
+5. Update an ADR in the same PR when an architectural decision changes.
+6. Merge only after GitHub Actions is green.
 
 Project board: [HelixAI Development](https://github.com/users/Ebunwadi/projects/4).
-
-## Sprint 1 status
-
-The runnable skeleton is the FastAPI `/health` endpoint plus the default Next.js app. Domain features (auth, tenancy, RAG, agents) start in later sprints.

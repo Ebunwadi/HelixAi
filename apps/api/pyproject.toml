@@ -1,24 +1,31 @@
 [project]
 name = "helix-api"
-version = "0.1.0"
+version = "0.2.0"
 description = "HelixAI FastAPI application"
 authors = [
     { name = "Ebunwadi", email = "111129501+Ebunwadi@users.noreply.github.com" }
 ]
 requires-python = ">=3.12"
 dependencies = [
+    "alembic>=1.18,<2",
+    "asyncpg>=0.30",
     "fastapi>=0.115",
+    "pydantic-settings>=2.10",
+    "pyjwt[crypto]>=2.10",
+    "sqlalchemy[asyncio]>=2.0,<2.1",
     "uvicorn[standard]>=0.32",
 ]
 
 [project.scripts]
 helix-api = "helix_api.main:main"
+helix-bootstrap-dev = "helix_api.dev.bootstrap:main"
 
 [dependency-groups]
 dev = [
     "httpx>=0.27",
     "pyright>=1.1",
     "pytest>=8",
+    "pytest-asyncio>=1.0",
     "ruff>=0.8",
 ]
 
@@ -36,6 +43,7 @@ select = ["E", "F", "I", "UP", "B"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+asyncio_mode = "auto"
 
 [tool.pyright]
 pythonVersion = "3.12"
