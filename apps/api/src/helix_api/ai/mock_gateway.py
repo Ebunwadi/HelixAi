@@ -33,10 +33,7 @@ class MockModelGateway:
         max_output_tokens: int | None = None,
     ) -> ModelResponse:
         user_text = self._last_user_text(messages)
-        text = (
-            "Mock model response — no Azure model call was made. "
-            f"You asked: {user_text}"
-        )
+        text = f"Mock model response — no Azure model call was made. You asked: {user_text}"
         return ModelResponse(
             text=text,
             model=self.model_name,
