@@ -31,3 +31,19 @@ class ConversationRepository:
             .order_by(Conversation.created_at.desc())
         )
         return list(result.scalars().all())
+
+    async def get_for_user(
+        self,
+        *,
+        tenant_id: UUID,
+        user_id: UUID,
+        conversation_id: UUID,
+    ) -> Conversation | None:
+        result = await self.session.execute(
+            select(Conversation).where(
+                Conversation.id == conversation_id,
+                Conversation.tenant_id == tenant_id,
+                Conversation.created_by == user_id,
+            )
+        )
+        return result.scalar_one_or_none()

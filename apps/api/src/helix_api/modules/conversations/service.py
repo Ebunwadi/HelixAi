@@ -1,3 +1,6 @@
+from uuid import UUID
+
+from helix_api.core.errors import NotFoundError
 from helix_api.modules.auth.schemas import CurrentContext
 from helix_api.modules.conversations.models import Conversation
 from helix_api.modules.conversations.repository import ConversationRepository
@@ -24,3 +27,13 @@ class ConversationService:
             tenant_id=context.tenant_id,
             user_id=context.user_id,
         )
+
+    async def get_owned(self, *, context: CurrentContext, conversation_id: UUID) -> Conversation:
+        conversation = await self.repository.get_for_user(
+            tenant_id=context.tenant_id,
+            user_id=context.user_id,
+            conversation_id=conversation_id,
+        )
+        if conversation is None:
+            raise NotFoundError("Conversation not found")
+        return conversation

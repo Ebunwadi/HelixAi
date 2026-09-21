@@ -22,6 +22,7 @@ class Settings(BaseSettings):
 
     helix_model_provider: Literal["mock", "azure_openai"] = "mock"
     helix_model_max_output_tokens: int = 800
+    helix_model_history_limit: int = 20
     azure_openai_endpoint: str | None = None
     azure_openai_api_key: str | None = None
     azure_openai_deployment: str | None = None
