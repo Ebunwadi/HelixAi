@@ -44,7 +44,6 @@ export default function WorkspacePage() {
 
   useEffect(() => {
     if (!conversationId) {
-      setMessages([]);
       return;
     }
 
@@ -145,6 +144,13 @@ export default function WorkspacePage() {
     }
   }
 
+  function selectConversation(nextId: string) {
+    setMessages([]);
+    setStreamingText("");
+    setIntent(null);
+    setConversationId(nextId);
+  }
+
   return (
     <section>
       <p className="eyebrow">AI Workspace · Sprint 3</p>
@@ -159,7 +165,7 @@ export default function WorkspacePage() {
           Conversation
           <select
             value={conversationId}
-            onChange={(event) => setConversationId(event.target.value)}
+            onChange={(event) => selectConversation(event.target.value)}
           >
             <option value="">New conversation on first message</option>
             {conversations.map((conversation) => (

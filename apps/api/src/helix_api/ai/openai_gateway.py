@@ -38,7 +38,13 @@ class OpenAIResponsesGateway:
             output_tokens=getattr(usage, "output_tokens", None),
         )
 
-    def _result(self, response: Any, *, started_at: float, text: str | None = None) -> ModelResponse:
+    def _result(
+        self,
+        response: Any,
+        *,
+        started_at: float,
+        text: str | None = None,
+    ) -> ModelResponse:
         return ModelResponse(
             text=text if text is not None else getattr(response, "output_text", ""),
             model=getattr(response, "model", self.deployment),

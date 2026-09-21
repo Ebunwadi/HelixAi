@@ -1,7 +1,10 @@
 from fastapi import APIRouter
 
 from helix_api.ai.factory import get_model_gateway
-from helix_api.modules.ai.schemas import InvestigationInterpretRequest, InvestigationInterpretResponse
+from helix_api.modules.ai.schemas import (
+    InvestigationInterpretRequest,
+    InvestigationInterpretResponse,
+)
 from helix_api.modules.ai.service import InvestigationInterpretService
 from helix_api.modules.auth.dependencies import CurrentContextDependency
 
