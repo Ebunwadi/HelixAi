@@ -22,6 +22,7 @@ export default function WorkspacePage() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Load the user's available conversation containers when the workspace opens.
   useEffect(() => {
     let cancelled = false;
     apiFetch<Conversation[]>("/api/v1/conversations")
@@ -42,6 +43,7 @@ export default function WorkspacePage() {
     };
   }, []);
 
+  // Whenever the selected conversation changes, reload its persisted messages.
   useEffect(() => {
     if (!conversationId) {
       return;
@@ -65,6 +67,8 @@ export default function WorkspacePage() {
     };
   }, [conversationId]);
 
+  // A user can type before manually creating a conversation. In that case,
+  // create the container lazily just before the first message is sent.
   async function ensureConversation(): Promise<string> {
     if (conversationId) {
       return conversationId;
@@ -102,6 +106,8 @@ export default function WorkspacePage() {
         },
       );
 
+      // The backend emits named SSE events. We update different pieces of UI
+      // state depending on whether a message was saved, text streamed, or finished.
       for await (const serverEvent of readServerSentEvents(response)) {
         if (serverEvent.event === "message.created") {
           setMessages((current) => [...current, serverEvent.data as Message]);
@@ -123,6 +129,8 @@ export default function WorkspacePage() {
     }
   }
 
+  // Structured intent uses the same text but asks the backend for a typed
+  // InvestigationIntent instead of a normal conversational response.
   async function interpretDraft() {
     const content = draft.trim();
     if (!content) {
@@ -144,6 +152,7 @@ export default function WorkspacePage() {
     }
   }
 
+  // Clear state belonging to the previous conversation before loading the next one.
   function selectConversation(nextId: string) {
     setMessages([]);
     setStreamingText("");
