@@ -9,11 +9,16 @@ from helix_api.core.errors import ModelConfigurationError
 
 @lru_cache
 def get_model_gateway() -> ModelGateway:
+    """Build the configured model provider once for the running process."""
+
     settings = get_settings()
 
+    # Mock mode keeps local development and CI deterministic and offline.
     if settings.helix_model_provider == "mock":
         return MockModelGateway()
 
+    # Fail early with a clear application error instead of allowing the SDK to
+    # fail later with a less helpful authentication/configuration exception.
     if not (
         settings.azure_openai_endpoint
         and settings.azure_openai_api_key
@@ -24,6 +29,8 @@ def get_model_gateway() -> ModelGateway:
             "AZURE_OPENAI_API_KEY and AZURE_OPENAI_DEPLOYMENT"
         )
 
+    # The rest of the application receives the ModelGateway interface and does
+    # not need to know that this concrete implementation uses Azure OpenAI.
     return OpenAIResponsesGateway(
         endpoint=settings.azure_openai_endpoint,
         api_key=settings.azure_openai_api_key,

@@ -17,6 +17,8 @@ class MockModelGateway:
 
     @staticmethod
     def _last_user_text(messages: list[ModelMessage]) -> str:
+        # Looking from the end mirrors a normal chat turn: the newest user
+        # message is the input the mock provider should respond to.
         return next(
             (message.content for message in reversed(messages) if message.role == "user"),
             "",
@@ -24,6 +26,8 @@ class MockModelGateway:
 
     @staticmethod
     def _estimated_tokens(text: str) -> int:
+        # This is intentionally only a rough testing estimate. Real Azure calls
+        # use token usage reported by the model provider.
         return max(1, len(text) // 4)
 
     async def generate(
@@ -33,7 +37,11 @@ class MockModelGateway:
         max_output_tokens: int | None = None,
     ) -> ModelResponse:
         user_text = self._last_user_text(messages)
+
+        # A deterministic response lets tests assert exact behaviour without
+        # depending on network access or the variability of a real LLM.
         text = f"Mock model response — no Azure model call was made. You asked: {user_text}"
+
         return ModelResponse(
             text=text,
             model=self.model_name,
@@ -55,6 +63,9 @@ class MockModelGateway:
     ) -> ModelResponse:
         user_text = self._last_user_text(messages)
         lower = user_text.lower()
+
+        # The mock imitates the shape of structured model output; it is not
+        # intended to imitate real language understanding.
         customer_name = "Acme" if "acme" in lower else None
         issue_type = (
             "authentication"
@@ -62,6 +73,7 @@ class MockModelGateway:
             else "general"
         )
         time_reference = "yesterday" if "yesterday" in lower else None
+
         payload = {
             "customer_name": customer_name,
             "issue_type": issue_type,
@@ -70,6 +82,7 @@ class MockModelGateway:
             "summary": user_text,
         }
         text = json.dumps(payload)
+
         return ModelResponse(
             text=text,
             model=self.model_name,
@@ -88,8 +101,12 @@ class MockModelGateway:
         max_output_tokens: int | None = None,
     ) -> AsyncIterator[ModelStreamEvent]:
         response = await self.generate(messages=messages, max_output_tokens=max_output_tokens)
+
+        # Split the deterministic response into word-sized chunks so the frontend
+        # exercises the same streaming path used with Azure.
         words = response.text.split(" ")
         for index, word in enumerate(words):
             suffix = "" if index == len(words) - 1 else " "
             yield ModelStreamEvent(type="text_delta", delta=f"{word}{suffix}")
+
         yield ModelStreamEvent(type="completed", response=response)

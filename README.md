@@ -42,8 +42,10 @@ cd apps/api
 uv sync --group dev
 uv run alembic upgrade head
 uv run helix-bootstrap-dev
-uv run uvicorn helix_api.main:app --reload --host 0.0.0.0 --port 8000
+uv run uvicorn helix_api.main:app --reload --host 0.0.0.0 --port 8001
 ```
+
+The FastAPI development server is available at `http://localhost:8001`, with Swagger UI at `http://localhost:8001/docs`.
 
 The bootstrap command creates a deterministic local user/tenant plus sample Acme and Globex customers.
 
@@ -55,7 +57,7 @@ npm ci
 npm run dev
 ```
 
-Open http://localhost:3000.
+Open `http://localhost:3000`. The browser calls the API at `http://localhost:8001`.
 
 ## Authentication and tenancy
 
