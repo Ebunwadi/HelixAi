@@ -42,9 +42,7 @@ def get_document_storage() -> DocumentStorage:
         return LocalDocumentStorage(Path(settings.helix_local_rag_path))
 
     if not settings.azure_storage_connection_string:
-        raise RagConfigurationError(
-            "Azure Blob Storage requires AZURE_STORAGE_CONNECTION_STRING"
-        )
+        raise RagConfigurationError("Azure Blob Storage requires AZURE_STORAGE_CONNECTION_STRING")
 
     return AzureBlobDocumentStorage(
         connection_string=settings.azure_storage_connection_string,
@@ -61,8 +59,7 @@ def get_search_index() -> SearchIndex:
 
     if not settings.azure_ai_search_endpoint or not settings.azure_ai_search_api_key:
         raise RagConfigurationError(
-            "Azure AI Search requires AZURE_AI_SEARCH_ENDPOINT and "
-            "AZURE_AI_SEARCH_API_KEY"
+            "Azure AI Search requires AZURE_AI_SEARCH_ENDPOINT and AZURE_AI_SEARCH_API_KEY"
         )
 
     return AzureAISearchIndex(
