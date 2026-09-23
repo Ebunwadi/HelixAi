@@ -81,6 +81,47 @@ export type RagAnswer = {
   } | null;
 };
 
+export type KnowledgeBase = {
+  id: string;
+  name: string;
+  description: string | null;
+  created_at: string;
+};
+
+export type KnowledgeDocument = {
+  id: string;
+  knowledge_base_id: string;
+  filename: string;
+  content_type: string | null;
+  status: "processing" | "indexed" | "failed";
+  error_message: string | null;
+  chunk_count: number;
+  created_at: string;
+  indexed_at: string | null;
+};
+
+export type Citation = {
+  number: number;
+  chunk_id: string;
+  document_id: string;
+  filename: string;
+  chunk_index: number;
+  score: number;
+  excerpt: string;
+};
+
+export type RagAnswer = {
+  answer: string;
+  citations: Citation[];
+  model: {
+    model: string;
+    response_id: string | null;
+    input_tokens: number | null;
+    output_tokens: number | null;
+    latency_ms: number;
+  } | null;
+};
+
 export type InvestigationIntent = {
   customer_name: string | null;
   issue_type: string;
@@ -168,6 +209,24 @@ export async function apiUpload<T>(path: string, body: FormData): Promise<T> {
   if (!response.ok) {
     throw await errorFromResponse(response);
   }
+  return (await response.json()) as T;
+}
+
+export async function apiUpload<T>(path: string, body: FormData): Promise<T> {
+  // Do not set Content-Type manually for FormData. The browser adds the
+  // multipart boundary parameter required by FastAPI's UploadFile parser.
+  const response = await fetch(`${apiBaseUrl}${path}`, {
+    method: "POST",
+    headers: {
+      ...authHeaders(),
+    },
+    body,
+  });
+
+  if (!response.ok) {
+    throw await errorFromResponse(response);
+  }
+
   return (await response.json()) as T;
 }
 
