@@ -28,6 +28,10 @@ jobs:
       DATABASE_URL: postgresql+asyncpg://helix:helix@localhost:5432/helix
       HELIX_AUTH_MODE: dev
       HELIX_MODEL_PROVIDER: mock
+      HELIX_EMBEDDING_PROVIDER: mock
+      HELIX_RAG_STORAGE_PROVIDER: local
+      HELIX_RAG_SEARCH_PROVIDER: local
+      HELIX_LOCAL_RAG_PATH: .helix-ci
       HELIX_RUN_DB_TESTS: "1"
     defaults:
       run:

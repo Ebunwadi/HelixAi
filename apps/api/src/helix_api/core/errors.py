@@ -48,6 +48,16 @@ class ModelProviderError(AppError):
         super().__init__(status_code=502, code="MODEL_PROVIDER_ERROR", message=message)
 
 
+class RagConfigurationError(AppError):
+    def __init__(self, message: str = "The RAG provider is not configured") -> None:
+        super().__init__(status_code=503, code="RAG_NOT_CONFIGURED", message=message)
+
+
+class RagProviderError(AppError):
+    def __init__(self, message: str = "The RAG provider could not complete the request") -> None:
+        super().__init__(status_code=502, code="RAG_PROVIDER_ERROR", message=message)
+
+
 def _correlation_id(request: Request) -> str:
     return getattr(request.state, "correlation_id", "unknown")
 

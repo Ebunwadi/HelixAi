@@ -18,3 +18,4 @@ Each ADR should stay short and explicit: context, decision, and consequences. Wh
 | [ADR-010](010-fine-tune-after-baseline.md) | Fine-tuning only after a measured baseline |
 | [ADR-011](011-separate-identity-and-tenant-authorization.md) | Separate external identity from HelixAI tenant authorisation |
 | [ADR-012](012-direct-responses-api-behind-model-gateway.md) | Direct Responses API behind a provider-independent model gateway |
+| [ADR-013](013-search-index-is-derived-data.md) | Treat the search index as derived data |

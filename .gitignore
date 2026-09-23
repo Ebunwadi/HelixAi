@@ -29,6 +29,9 @@ out/
 .turbo/
 *.tsbuildinfo
 
+# HelixAI local derived/runtime data
+.helix/
+
 # OS / editor
 .DS_Store
 Thumbs.db

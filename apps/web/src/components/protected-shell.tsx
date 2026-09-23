@@ -17,6 +17,7 @@ const CurrentContextValue = createContext<CurrentContext | null>(null);
 const navigation = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/workspace", label: "AI Workspace" },
+  { href: "/knowledge", label: "Knowledge" },
   { href: "/customers", label: "Customers" },
   { href: "/conversations", label: "Conversations" },
 ];
@@ -64,7 +65,7 @@ export function ProtectedShell({ children }: { children: ReactNode }) {
           <h1>HelixAI could not establish your tenant session.</h1>
           <p>{error}</p>
           <p className="muted">
-            For local Sprint 2 development, run the bootstrap command and copy the web
+            For local development, run the bootstrap command and copy the web
             environment example to <code>.env.local</code>.
           </p>
         </div>

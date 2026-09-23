@@ -40,7 +40,18 @@ class MockModelGateway:
 
         # A deterministic response lets tests assert exact behaviour without
         # depending on network access or the variability of a real LLM.
-        text = f"Mock model response — no Azure model call was made. You asked: {user_text}"
+        #
+        # RAG prompts contain numbered source passages. Returning a short answer
+        # based on the first passage makes the local Knowledge UI demonstrate the
+        # grounding/citation flow without pretending the mock has real semantics.
+        if "\n\nSources:\n" in user_text:
+            sources = user_text.split("\n\nSources:\n", maxsplit=1)[1]
+            first_source = sources.split("\n\n[2]", maxsplit=1)[0]
+            source_lines = first_source.splitlines()
+            evidence = " ".join(source_lines[1:]).strip() if len(source_lines) > 1 else first_source
+            text = f"Mock grounded answer from retrieved evidence: {evidence[:240]} [1]"
+        else:
+            text = f"Mock model response — no Azure model call was made. You asked: {user_text}"
 
         return ModelResponse(
             text=text,
