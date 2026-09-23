@@ -18,6 +18,7 @@ const navigation = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/workspace", label: "AI Workspace" },
   { href: "/knowledge", label: "Knowledge" },
+  { href: "/knowledge", label: "Knowledge" },
   { href: "/customers", label: "Customers" },
   { href: "/conversations", label: "Conversations" },
 ];
