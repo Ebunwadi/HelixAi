@@ -26,9 +26,7 @@ class DocumentStatus(StrEnum):
 
 class KnowledgeBase(Base):
     __tablename__ = "knowledge_bases"
-    __table_args__ = (
-        UniqueConstraint("tenant_id", "name", name="uq_knowledge_bases_tenant_name"),
-    )
+    __table_args__ = (UniqueConstraint("tenant_id", "name", name="uq_knowledge_bases_tenant_name"),)
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
     tenant_id: Mapped[UUID] = mapped_column(
