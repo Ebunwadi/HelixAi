@@ -16,25 +16,38 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://helix:helix@localhost:5432/helix"
     cors_origins: str = "http://localhost:3000"
 
-    # Authentication is deliberately configurable so local development can use
-    # explicit dev headers while production can validate real JWTs.
+    # Authentication.
     helix_auth_mode: Literal["dev", "jwt"] = "dev"
     helix_auth_issuer: str | None = None
     helix_auth_audience: str | None = None
     helix_auth_jwks_url: str | None = None
 
-    # The model provider defaults to a deterministic mock so developers and CI
-    # can exercise the complete AI flow without Azure credentials or API cost.
+    # Generation model configuration introduced in Sprint 3.
     helix_model_provider: Literal["mock", "azure_openai"] = "mock"
     helix_model_max_output_tokens: int = 800
-
-    # We intentionally send only recent conversation history to the model.
-    # This is a simple Sprint 3 context-window policy that later sprints can improve.
     helix_model_history_limit: int = 20
-
     azure_openai_endpoint: str | None = None
     azure_openai_api_key: str | None = None
     azure_openai_deployment: str | None = None
+
+    # Sprint 4 RAG configuration. Local providers keep development and CI
+    # independent of cloud credentials while using the same application interfaces.
+    helix_embedding_provider: Literal["mock", "azure_openai"] = "mock"
+    helix_rag_storage_provider: Literal["local", "azure_blob"] = "local"
+    helix_rag_search_provider: Literal["local", "azure_ai_search"] = "local"
+    helix_embedding_dimensions: int = 64
+    helix_chunk_size: int = 1200
+    helix_chunk_overlap: int = 200
+    helix_rag_top_k: int = 5
+    helix_document_max_bytes: int = 5_000_000
+    helix_local_rag_path: str = ".helix"
+
+    azure_openai_embedding_deployment: str | None = None
+    azure_storage_connection_string: str | None = None
+    azure_storage_container: str = "helix-knowledge"
+    azure_ai_search_endpoint: str | None = None
+    azure_ai_search_api_key: str | None = None
+    azure_ai_search_index: str = "helix-knowledge"
 
     @property
     def cors_origin_list(self) -> list[str]:
@@ -44,6 +57,5 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    # Settings are immutable for a running process in practice, so caching avoids
-    # reparsing the environment on every request.
+    # Settings are effectively immutable for one process, so cache the parsed object.
     return Settings()
