@@ -2,7 +2,7 @@
 
 Multi-tenant agentic customer operations platform.
 
-This repository is a monorepo. The system design report is the product and architecture source of truth. Architecture Decision Records live in [`docs/adr`](docs/adr).
+This repository is a monorepo. The system design report is the product and architecture source of truth. Architecture Decision Records live in [`docs/adr`](docs/adr), and sprint implementation notes live in [`docs/sprints`](docs/sprints).
 
 ## Repository layout
 
@@ -12,7 +12,8 @@ apps/web      Next.js + TypeScript frontend
 packages/     Shared AI/application libraries (introduced in later sprints)
 infrastructure/
 docs/adr      Architecture Decision Records
-scripts/      Repository-level checks
+docs/sprints  Sprint implementation notes
+scripts/      Repository-level developer checks
 ```
 
 ## Prerequisites
@@ -32,9 +33,7 @@ cp apps/web/.env.example apps/web/.env.local
 docker compose up -d
 ```
 
-Git Bash does not have `Copy-Item` (that is PowerShell) and may not have `uv` on `PATH`. Use `cp` and `python -m uv ...` instead.
-
-On Windows PowerShell you can use `Copy-Item` instead of `cp` if needed.
+On Windows PowerShell use `Copy-Item` instead of `cp`.
 
 ### Prepare the API and database
 
@@ -43,10 +42,12 @@ cd apps/api
 uv sync --group dev
 uv run alembic upgrade head
 uv run helix-bootstrap-dev
-uv run uvicorn helix_api.main:app --reload --host 0.0.0.0 --port 8000
+uv run uvicorn helix_api.main:app --reload --host 0.0.0.0 --port 8001
 ```
 
-The bootstrap command is local-only and creates a deterministic development user/tenant plus sample Acme and Globex customers. It prints the same subject and tenant identifiers used by `apps/web/.env.example`.
+The FastAPI development server is available at `http://localhost:8001`, with Swagger UI at `http://localhost:8001/docs`.
+
+The bootstrap command creates a deterministic local user/tenant plus sample Acme and Globex customers.
 
 ### Run the web app
 
@@ -56,20 +57,43 @@ npm ci
 npm run dev
 ```
 
-Open http://localhost:3000. The protected shell first calls `GET /api/v1/me`; application navigation is rendered only after the API establishes a valid tenant context.
+Open `http://localhost:3000`. The browser calls the API at `http://localhost:8001`.
 
-## Sprint 2 authentication model
+## Authentication and tenancy
 
-Authentication and application tenancy are intentionally separate:
+Authentication and application tenancy are separate:
 
-1. An external identity proves who the caller is. In production mode the API validates a Bearer JWT using issuer, audience and JWKS settings.
+1. An external identity proves who the caller is.
 2. `User.external_identity_id` maps that identity to an internal HelixAI user.
-3. A tenant selection is authorised through an active `Membership` row.
-4. Services receive the trusted current context, and repositories still filter tenant-owned data by `tenant_id`.
+3. A tenant selection is authorised through an active `Membership`.
+4. Services receive a trusted `CurrentContext`, and tenant-owned repositories still filter by `tenant_id`.
 
-For local development, `HELIX_AUTH_MODE=dev` accepts explicit `X-Helix-*` headers. Do not use that mode as production authentication.
+For local development, `HELIX_AUTH_MODE=dev` accepts explicit `X-Helix-*` headers. Production mode validates a Bearer JWT.
 
-## Sprint 2 API routes
+## Sprint 3 model configuration
+
+Sprint 3 deliberately uses direct model calls before LangChain, LangGraph, tools, RAG or agents.
+
+Local development defaults to the deterministic mock provider:
+
+```text
+HELIX_MODEL_PROVIDER=mock
+```
+
+The mock provider makes no Azure call. To use Azure OpenAI, configure `apps/api/.env`:
+
+```text
+HELIX_MODEL_PROVIDER=azure_openai
+AZURE_OPENAI_ENDPOINT=https://YOUR-RESOURCE.openai.azure.com
+AZURE_OPENAI_API_KEY=...
+AZURE_OPENAI_DEPLOYMENT=YOUR-DEPLOYMENT-NAME
+```
+
+Never commit the real API key.
+
+The Azure implementation uses the Azure OpenAI v1 Responses API through the standard OpenAI Python client. Application services depend on HelixAI's provider-independent `ModelGateway`, not directly on SDK types.
+
+## Current API routes
 
 ```text
 GET  /health
@@ -77,11 +101,26 @@ GET  /api/v1/me
 GET  /api/v1/tenants/current
 GET  /api/v1/customers
 GET  /api/v1/customers/{id}
+
 POST /api/v1/conversations
 GET  /api/v1/conversations
+GET  /api/v1/conversations/{id}/messages
+POST /api/v1/conversations/{id}/messages
+POST /api/v1/conversations/{id}/messages/stream
+
+POST /api/v1/ai/interpret-investigation
 ```
 
-Messages and model calls deliberately start in Sprint 3.
+The streaming endpoint returns Server-Sent Events:
+
+```text
+message.created
+token.delta
+message.completed
+error
+```
+
+Assistant messages store model name, provider response ID, input/output token counts and latency alongside the generated text.
 
 ## Checks
 
@@ -94,7 +133,7 @@ uv run pyright
 uv run pytest
 ```
 
-Database integration tests run in CI with PostgreSQL after `alembic upgrade head`.
+CI also starts PostgreSQL, applies all Alembic migrations and enables the database integration tests.
 
 From `apps/web`:
 
@@ -105,7 +144,7 @@ npm test
 npm run build
 ```
 
-Or run the local repository checks with `scripts/check.sh` / `scripts/check.ps1`. The GitHub Actions API job additionally validates the real migration and cross-tenant integration test.
+Or run the repository checks with `scripts/check.sh` / `scripts/check.ps1`.
 
 ## Configuration conventions
 

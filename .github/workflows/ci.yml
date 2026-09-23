@@ -27,6 +27,7 @@ jobs:
     env:
       DATABASE_URL: postgresql+asyncpg://helix:helix@localhost:5432/helix
       HELIX_AUTH_MODE: dev
+      HELIX_MODEL_PROVIDER: mock
       HELIX_RUN_DB_TESTS: "1"
     defaults:
       run:

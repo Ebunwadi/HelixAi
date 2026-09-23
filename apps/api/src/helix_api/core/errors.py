@@ -38,6 +38,16 @@ class NotFoundError(AppError):
         super().__init__(status_code=404, code="NOT_FOUND", message=message)
 
 
+class ModelConfigurationError(AppError):
+    def __init__(self, message: str = "The model provider is not configured") -> None:
+        super().__init__(status_code=503, code="MODEL_NOT_CONFIGURED", message=message)
+
+
+class ModelProviderError(AppError):
+    def __init__(self, message: str = "The model provider could not complete the request") -> None:
+        super().__init__(status_code=502, code="MODEL_PROVIDER_ERROR", message=message)
+
+
 def _correlation_id(request: Request) -> str:
     return getattr(request.state, "correlation_id", "unknown")
 

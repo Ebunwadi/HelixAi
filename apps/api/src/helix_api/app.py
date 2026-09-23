@@ -11,7 +11,7 @@ def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(
         title="HelixAI API",
-        version="0.2.0",
+        version="0.3.0",
         description="HelixAI customer operations API.",
     )
 
