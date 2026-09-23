@@ -12,9 +12,11 @@ from azure.search.documents.indexes.models import (
     HnswAlgorithmConfiguration,
     SearchField,
     SearchFieldDataType,
-    SearchIndex as AzureSearchIndexDefinition,
     VectorSearch,
     VectorSearchProfile,
+)
+from azure.search.documents.indexes.models import (
+    SearchIndex as AzureSearchIndexDefinition,
 )
 from azure.search.documents.models import VectorizedQuery
 
