@@ -187,7 +187,7 @@ class AzureAISearchIndex:
             ),
             SearchField(
                 name="content_vector",
-                type=SearchFieldDataType.Collection(SearchFieldDataType.Single),
+                type="Collection(Edm.Single)",
                 searchable=True,
                 vector_search_dimensions=self.dimensions,
                 vector_search_profile_name="helix-vector-profile",
