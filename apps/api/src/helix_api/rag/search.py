@@ -58,9 +58,7 @@ class LocalSearchIndex:
         with self._lock:
             rows = self._read()
             document_ids = {str(chunk.document_id) for chunk in chunks}
-            rows = [
-                row for row in rows if str(row.get("document_id")) not in document_ids
-            ]
+            rows = [row for row in rows if str(row.get("document_id")) not in document_ids]
             rows.extend(
                 {
                     "chunk_id": str(chunk.chunk_id),
@@ -279,10 +277,7 @@ class AzureAISearchIndex:
             k_nearest_neighbors=top_k,
             fields="content_vector",
         )
-        tenant_filter = (
-            f"tenant_id eq '{tenant_id}' and "
-            f"knowledge_base_id eq '{knowledge_base_id}'"
-        )
+        tenant_filter = f"tenant_id eq '{tenant_id}' and knowledge_base_id eq '{knowledge_base_id}'"
 
         hits: list[SearchHit] = []
         try:
