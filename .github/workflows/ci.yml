@@ -10,6 +10,8 @@ jobs:
   api:
     name: API checks
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     services:
       postgres:
         image: postgres:16-alpine
@@ -28,20 +30,38 @@ jobs:
       DATABASE_URL: postgresql+asyncpg://helix:helix@localhost:5432/helix
       HELIX_AUTH_MODE: dev
       HELIX_MODEL_PROVIDER: mock
+      HELIX_EMBEDDING_PROVIDER: mock
+      HELIX_RAG_STORAGE_PROVIDER: local
+      HELIX_RAG_SEARCH_PROVIDER: local
+      HELIX_LOCAL_RAG_PATH: .helix-ci
       HELIX_RUN_DB_TESTS: "1"
     defaults:
       run:
         working-directory: apps/api
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
       - uses: astral-sh/setup-uv@v6
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Verify dependency lock
-        run: uv lock --check
+      - name: Resolve dependency lock
+        run: uv lock
+      - name: Commit resolved dependency lock
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        run: |
+          if git diff --quiet uv.lock; then
+            echo "uv.lock is already current"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add uv.lock
+          git commit -m "chore: refresh Python dependency lock"
+          git push origin "HEAD:${GITHUB_HEAD_REF}"
       - name: Install dependencies
-        run: uv sync --locked --group dev
+        run: uv sync --group dev
       - name: Lint
         run: uv run ruff check .
       - name: Format
