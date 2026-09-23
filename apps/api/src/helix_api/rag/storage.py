@@ -53,9 +53,7 @@ class AzureBlobDocumentStorage:
         blob_name = f"{tenant_id}/{document_id}/{safe_name}"
 
         # The async Azure client shares its connection pool beneath child clients.
-        async with BlobServiceClient.from_connection_string(
-            self.connection_string
-        ) as service:
+        async with BlobServiceClient.from_connection_string(self.connection_string) as service:
             container = service.get_container_client(self.container_name)
 
             try:
