@@ -1,3 +1,4 @@
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, File, UploadFile, status
@@ -61,7 +62,7 @@ async def upload_document(
     knowledge_base_id: UUID,
     context: CurrentContextDependency,
     session: SessionDependency,
-    file: UploadFile = File(...),
+    file: Annotated[UploadFile, File()],
 ) -> DocumentRead:
     content = await file.read()
 
