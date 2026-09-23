@@ -6,6 +6,7 @@ from sqlalchemy import select
 from helix_api.core.config import get_settings
 from helix_api.db.session import get_session_factory
 from helix_api.modules.customers.models import Customer, CustomerStatus
+from helix_api.modules.knowledge.models import KnowledgeBase
 from helix_api.modules.tenants.models import (
     Membership,
     MembershipRole,
@@ -17,6 +18,7 @@ from helix_api.modules.users.models import User
 
 DEV_TENANT_ID = UUID("11111111-1111-4111-8111-111111111111")
 DEV_USER_ID = UUID("22222222-2222-4222-8222-222222222222")
+DEV_KNOWLEDGE_BASE_ID = UUID("33333333-3333-4333-8333-333333333333")
 DEV_SUBJECT = "dev-user"
 
 
@@ -91,11 +93,24 @@ async def bootstrap() -> None:
                 ]
             )
 
+        # Give local Sprint 4 development a ready-to-use knowledge container.
+        knowledge_base = await session.get(KnowledgeBase, DEV_KNOWLEDGE_BASE_ID)
+        if knowledge_base is None:
+            session.add(
+                KnowledgeBase(
+                    id=DEV_KNOWLEDGE_BASE_ID,
+                    tenant_id=DEV_TENANT_ID,
+                    name="Support Knowledge",
+                    description="Local demo knowledge base for Sprint 4 RAG.",
+                )
+            )
+
         await session.commit()
 
     print("Development data is ready.")
     print(f"X-Helix-Subject: {DEV_SUBJECT}")
     print(f"X-Helix-Tenant-Id: {DEV_TENANT_ID}")
+    print(f"Knowledge base: {DEV_KNOWLEDGE_BASE_ID}")
 
 
 def main() -> None:

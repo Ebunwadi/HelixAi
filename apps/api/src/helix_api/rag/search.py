@@ -1,6 +1,7 @@
 import asyncio
 import json
 import math
+import threading
 from pathlib import Path
 from uuid import UUID
 
@@ -39,7 +40,8 @@ class LocalSearchIndex:
 
     def __init__(self, path: Path) -> None:
         self.path = path
-        self._lock = asyncio.Lock()
+        # A threading lock is safe even when pytest creates multiple asyncio loops.
+        self._lock = threading.Lock()
 
     def _read(self) -> list[dict[str, object]]:
         if not self.path.exists():
@@ -50,16 +52,10 @@ class LocalSearchIndex:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.path.write_text(json.dumps(rows), encoding="utf-8")
 
-    async def index_chunks(self, chunks: list[IndexedChunk]) -> None:
-        if not chunks:
-            return
-
-        document_ids = {str(chunk.document_id) for chunk in chunks}
-
-        async with self._lock:
-            rows = await asyncio.to_thread(self._read)
-
-            # Re-indexing the same document replaces its old derived entries.
+    def _replace_document_rows(self, chunks: list[IndexedChunk]) -> None:
+        with self._lock:
+            rows = self._read()
+            document_ids = {str(chunk.document_id) for chunk in chunks}
             rows = [
                 row for row in rows if str(row.get("document_id")) not in document_ids
             ]
@@ -76,7 +72,48 @@ class LocalSearchIndex:
                 }
                 for chunk in chunks
             )
-            await asyncio.to_thread(self._write, rows)
+            self._write(rows)
+
+    async def index_chunks(self, chunks: list[IndexedChunk]) -> None:
+        if chunks:
+            await asyncio.to_thread(self._replace_document_rows, chunks)
+
+    def _search_rows(
+        self,
+        *,
+        tenant_id: UUID,
+        knowledge_base_id: UUID,
+        query_embedding: list[float],
+        top_k: int,
+    ) -> list[SearchHit]:
+        with self._lock:
+            rows = self._read()
+
+        candidates: list[SearchHit] = []
+        for row in rows:
+            if row.get("tenant_id") != str(tenant_id):
+                continue
+            if row.get("knowledge_base_id") != str(knowledge_base_id):
+                continue
+
+            raw_embedding = row.get("embedding")
+            if not isinstance(raw_embedding, list):
+                continue
+            embedding = [float(value) for value in raw_embedding]
+
+            candidates.append(
+                SearchHit(
+                    chunk_id=UUID(str(row["chunk_id"])),
+                    document_id=UUID(str(row["document_id"])),
+                    filename=str(row["filename"]),
+                    chunk_index=int(str(row["chunk_index"])),
+                    content=str(row["content"]),
+                    score=_cosine(query_embedding, embedding),
+                )
+            )
+
+        candidates.sort(key=lambda item: item.score, reverse=True)
+        return candidates[:top_k]
 
     async def search(
         self,
@@ -86,30 +123,13 @@ class LocalSearchIndex:
         query_embedding: list[float],
         top_k: int,
     ) -> list[SearchHit]:
-        async with self._lock:
-            rows = await asyncio.to_thread(self._read)
-
-        candidates: list[SearchHit] = []
-        for row in rows:
-            if row.get("tenant_id") != str(tenant_id):
-                continue
-            if row.get("knowledge_base_id") != str(knowledge_base_id):
-                continue
-
-            embedding = [float(value) for value in row["embedding"]]  # type: ignore[index]
-            candidates.append(
-                SearchHit(
-                    chunk_id=UUID(str(row["chunk_id"])),
-                    document_id=UUID(str(row["document_id"])),
-                    filename=str(row["filename"]),
-                    chunk_index=int(row["chunk_index"]),  # type: ignore[arg-type]
-                    content=str(row["content"]),
-                    score=_cosine(query_embedding, embedding),
-                )
-            )
-
-        candidates.sort(key=lambda item: item.score, reverse=True)
-        return candidates[:top_k]
+        return await asyncio.to_thread(
+            self._search_rows,
+            tenant_id=tenant_id,
+            knowledge_base_id=knowledge_base_id,
+            query_embedding=query_embedding,
+            top_k=top_k,
+        )
 
 
 class AzureAISearchIndex:
@@ -132,12 +152,7 @@ class AzureAISearchIndex:
 
     def _definition(self) -> AzureSearchIndexDefinition:
         fields = [
-            SearchField(
-                name="id",
-                type=SearchFieldDataType.String,
-                key=True,
-                filterable=True,
-            ),
+            SearchField(name="id", type=SearchFieldDataType.String, key=True, filterable=True),
             SearchField(
                 name="tenant_id",
                 type=SearchFieldDataType.String,
@@ -201,8 +216,6 @@ class AzureAISearchIndex:
             if self._index_ready:
                 return
 
-            # Index administration uses the synchronous management client only
-            # during initial setup, so run it off the event loop.
             def create() -> None:
                 client = SearchIndexClient(
                     endpoint=self.endpoint,
